@@ -2,19 +2,11 @@ name: Cluster IT - 1C1D1A
 
 on:
   push:
-    branches:
-      - master
-      - 'rel/1.*'
-      - 'rc/1.*'
-      - 'force_ci/**'
-    paths-ignore:
-      - 'docs/**'
-      - 'site/**'
   pull_request:
     branches:
       - master
-      - 'rel/1.*'
-      - 'rc/1.*'
+      - 'rel/*'
+      - 'rc/*'
       - 'force_ci/**'
     paths-ignore:
       - 'docs/**'
@@ -27,38 +19,39 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  MAVEN_OPTS: -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.class=standard -Dmaven.wagon.http.retryHandler.count=3
+  MAVEN_OPTS: -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.class=standard 
+    -Dmaven.wagon.http.retryHandler.count=3
   MAVEN_ARGS: --batch-mode --no-transfer-progress
-  DEVELOCITY_ACCESS_KEY: ${{ secrets.GE_ACCESS_TOKEN }}
+  DEVELOCITY_ACCESS_KEY: ${{ secrets.DEVELOCITY_ACCESS_KEY }}
 
 jobs:
   AINode:
     strategy:
       fail-fast: false
-      max-parallel: 15
+      max-parallel: 1
       matrix:
-        os: [ ubuntu-latest ]
+        os:
+          - ubuntu-latest
+          - windows-latest
+          - macos-latest
     runs-on: ${{ matrix.os }}
 
     steps:
-      - uses: actions/checkout@v4
-      - name: Build AINode
-        shell: bash
-        run: mvn clean package -DskipTests -P with-ainode
+      - uses: actions/checkout@v5
       - name: IT Test
         shell: bash
         run: |
           mvn clean verify \
-          -P with-integration-tests \
+          -P with-integration-tests,with-ainode \
           -DskipUTs \
-          -DintegrationTest.forkCount=2 \
-          -pl integration-test \
+          -DintegrationTest.forkCount=1 \
+          -pl integration-test,iotdb-core/ainode \
           -am \
           -PAIClusterIT
       - name: Upload Artifact
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: cluster-log-ainode-${{ matrix.os }}
-          path: integration-test/target/ainode-logs
+          path: integration-test/target/*-logs
           retention-days: 30
