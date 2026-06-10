@@ -3,25 +3,6 @@
 name: Compile Check
 
 on:
-  push:
-    branches:
-      - master
-      - 'rel/1.*'
-      - 'rc/1.*'
-      - 'force_ci/**'
-    paths-ignore:
-      - 'docs/**'
-      - 'site/**'
-  pull_request:
-    branches:
-      - master
-      - 'rel/1.*'
-      - 'rc/1.*'
-      - 'force_ci/**'
-    paths-ignore:
-      - 'docs/**'
-      - 'site/**'
-  # allow manually run the action:
   workflow_dispatch:
 
 concurrency:
@@ -29,7 +10,8 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  MAVEN_OPTS: -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.class=standard -Dmaven.wagon.http.retryHandler.count=3
+  MAVEN_OPTS: -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.class=standard 
+    -Dmaven.wagon.http.retryHandler.count=3
   MAVEN_ARGS: --batch-mode --no-transfer-progress
   DEVELOCITY_ACCESS_KEY: ${{ secrets.GE_ACCESS_TOKEN }}
 
@@ -39,7 +21,7 @@ jobs:
       fail-fast: false
       matrix:
         java: [8]
-        os: [ ubuntu-latest ]
+        os: [ubuntu-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4

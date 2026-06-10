@@ -1,16 +1,14 @@
 name: Daily IT
 
 on:
-  schedule:
-    # Run at UTC 19:00 every day (CST 03:00 AM)
-    - cron: '0 19 * * *'
-
+  workflow_dispatch:
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 env:
-  MAVEN_OPTS: -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.class=standard -Dmaven.wagon.http.retryHandler.count=3
+  MAVEN_OPTS: -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.class=standard 
+    -Dmaven.wagon.http.retryHandler.count=3
   MAVEN_ARGS: --batch-mode --no-transfer-progress
   DEVELOCITY_ACCESS_KEY: ${{ secrets.GE_ACCESS_TOKEN }}
 
@@ -20,7 +18,7 @@ jobs:
       fail-fast: false
       max-parallel: 20
       matrix:
-        java: [ 8, 17 ]
+        java: [8, 17]
     runs-on: [self-hosted, iotdb]
     #      group: self-hosted
     #      labels: iotdb
@@ -43,7 +41,7 @@ jobs:
           -pl integration-test \
           -am -PDailyIT
       - name: Upload Artifact
-        if: failure()
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: cluster-log-java${{ matrix.java }}-${{ runner.os }}
