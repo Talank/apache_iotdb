@@ -4,26 +4,6 @@
 name: Sonar-Codecov
 
 on:
-  push:
-    branches:
-      - master
-      - "rel/*"
-      - "rc/*"
-      - 'force_ci/**'
-    paths-ignore:
-      - "docs/**"
-      - 'site/**'
-  pull_request:
-    branches:
-      - master
-      - "rel/*"
-      - "new_*"
-      - "rc/*"
-      - 'force_ci/**'
-    paths-ignore:
-      - "docs/**"
-      - 'site/**'
-  # allow manually run the action:
   workflow_dispatch:
 
 concurrency:
@@ -31,15 +11,16 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  MAVEN_OPTS: -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.class=standard -Dmaven.wagon.http.retryHandler.count=3
+  MAVEN_OPTS: -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.class=standard 
+    -Dmaven.wagon.http.retryHandler.count=3
   MAVEN_ARGS: --batch-mode --no-transfer-progress
   PR_NUMBER: ${{ github.event.number }}
   DEVELOCITY_ACCESS_KEY: ${{ secrets.GE_ACCESS_TOKEN }}
 
 jobs:
   codecov:
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'apache/iotdb' || github.event_name == 'push'
+    runs-on: ${{ matrix.os }}
+    if: always()
 
     steps:
       - uses: actions/checkout@v4
@@ -50,7 +31,7 @@ jobs:
           key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-m2-
       - name: Test
-        run: | 
+        run: |
           mvn -B -P with-code-coverage clean package -pl distribution,iotdb-client/cli,iotdb-client/session,iotdb-client/jdbc -am -Dtest.port.closed=true
           mvn -B -P with-code-coverage post-integration-test -pl code-coverage
       - name: Upload coverage reports to codecov
@@ -59,9 +40,15 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./code-coverage/target/jacoco-merged-reports/jacoco.xml
 
+    strategy:
+      matrix:
+        os: &id001
+          - ubuntu-latest
+          - ubuntu-24.04-arm
+      fail-fast: false
   sonar:
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'apache/iotdb' || github.event_name == 'push'
+    runs-on: ${{ matrix.os }}
+    if: always()
     steps:
       - uses: actions/checkout@v4
       - name: Set up JDK 17
@@ -86,3 +73,7 @@ jobs:
           -Dsonar.host.url=https://sonarcloud.io \
           -Dsonar.token=${{ secrets.SONARCLOUD_TOKEN }} \
           -DskipTests -pl '!distribution,!integration-test' -am
+    strategy:
+      matrix:
+        os: *id001
+      fail-fast: false

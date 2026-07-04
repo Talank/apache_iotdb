@@ -1,34 +1,5 @@
 name: Multi-Language Client
 on:
-  push:
-    branches:
-      - master
-      - "rc/*"
-      - 'force_ci/**'
-    paths:
-      - 'pom.xml'
-      - 'iotdb-client/pom.xml'
-      - 'iotdb-client/client-py/**'
-      - 'iotdb-client/client-cpp/**'
-      - 'example/client-cpp-example/**'
-      - 'iotdb-protocol/thrift-datanode/src/main/thrift/client.thrift'
-      - 'iotdb-protocol/thrift-commons/src/main/thrift/common.thrift'
-      - '.github/workflows/multi-language-client.yml'
-  pull_request:
-    branches:
-      - master
-      - "rc/*"
-      - 'force_ci/**'
-    paths:
-      - 'pom.xml'
-      - 'iotdb-client/pom.xml'
-      - 'iotdb-client/client-py/**'
-      - 'iotdb-client/client-cpp/**'
-      - 'example/client-cpp-example/**'
-      - 'iotdb-protocol/thrift-datanode/src/main/thrift/client.thrift'
-      - 'iotdb-protocol/thrift-commons/src/main/thrift/common.thrift'
-      - '.github/workflows/multi-language-client.yml'
-  # allow manually run the action:
   workflow_dispatch:
 
 
@@ -37,7 +8,8 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  MAVEN_OPTS: -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.class=standard -Dmaven.wagon.http.retryHandler.count=3
+  MAVEN_OPTS: -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.class=standard 
+    -Dmaven.wagon.http.retryHandler.count=3
   MAVEN_ARGS: --batch-mode --no-transfer-progress
 
 jobs:
@@ -110,7 +82,7 @@ jobs:
           retention-days: 1
 
   go:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
 
     steps:
       - uses: actions/checkout@v4
@@ -133,12 +105,18 @@ jobs:
           cd iotdb-client-go 
           make e2e_test_for_parent_git_repo e2e_test_clean_for_parent_git_repo
 
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+          - ubuntu-24.04-arm
+      fail-fast: false
   python:
     strategy:
       fail-fast: false
       max-parallel: 15
       matrix:
-        python: [ '3.6', '3.x' ]
+        python: ['3.6', '3.x']
     runs-on: ${{ (matrix.python == '3.6' && 'ubuntu-20.04') || 'ubuntu-latest' }}
 
     steps:
